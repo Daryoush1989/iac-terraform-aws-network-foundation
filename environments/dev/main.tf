@@ -1,6 +1,9 @@
-variable "org"    { type = string }
-variable "env"    { type = string }
-variable "app"    { type = string }
+# test oidc
+
+
+variable "org" { type = string }
+variable "env" { type = string }
+variable "app" { type = string }
 variable "region" { type = string }
 
 module "vpc" {
