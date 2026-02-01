@@ -1,0 +1,58 @@
+name: terraform-stage
+
+on:
+  pull_request:
+    paths:
+      - "modules/**"
+      - "environments/stage/**"
+  push:
+    branches: ["main"]
+    paths:
+      - "modules/**"
+      - "environments/stage/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-stage
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: environments/stage
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan (PR)
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color
+
+      - name: Terraform apply (main)
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve
